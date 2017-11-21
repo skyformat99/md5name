@@ -1,0 +1,73 @@
+# Vim files
+*~
+.*~
+*.un~
+*.swp
+
+# Prerequisites
+*.d
+*.depend
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# DS_Store files
+.DS_Store
+
+# CMake compile files
+cmake-build-debug/
+CMakeLists.txt
+
+# CLion IDE files
+.idea/
+
+# Doxygen files
+doxygen/
+html/
+latex/
+man/
+
+# Code::Blocks IDE files
+*.cbp
+*.layout
+*.save
+
+# Code::Blocks build files
+obj/
+bin/
+
+# Eclipse IDE files
+.project
+.cproject
+.settings/
+
+# Eclipse IDE build files
+Debug/
+Release/
