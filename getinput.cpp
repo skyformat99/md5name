@@ -88,6 +88,24 @@ int GetInput::getInt() {
     }
 }
 
+double GetInput::getDouble(std::string prompt, double min) {
+    double value = 0;
+    while (true) {
+        GetInput::prompt(prompt);
+        if (std::cin >> value) { //read and check if cin is still good
+            if (value >= min) { //if within limits, use it
+                return value;
+            }
+        } else if (std::cin.eof()) { //if ctrl-d
+                std::cout << "\nKeyboard interrupt\n";
+            exit(1);
+        } else if (std::cin.bad() || std::cin.fail()) { //if cin failed
+                std::cin.clear();
+                std::cin.ignore(INT_MAX, '\n'); //ignore rest of line
+        }
+        std::cout << "Try again\n";
+    }
+}
 
 char GetInput::getChar(std::string prompt) {
     char value = 0;

@@ -19,7 +19,7 @@ public:
      * @param prompt The string to print (not including a " :")
      * @param min The minimum integer value to allow
      * @param max The maximum integer value to allow
-     * @return string user entered integer between min and max
+     * @return user entered integer between min and max
      */
     static int getInt(std::string prompt, int min, int max);
 
@@ -28,6 +28,14 @@ public:
     static int getInt(std::string p);
 
     static int getInt();
+
+    /**
+     * Gets a double value from stdin in a user friendly manner
+     * @param prompt The string to print (not including a " :")
+     * @param min The minimum double value to allow
+     * @return user entered double between min and max
+     */
+    static double getDouble(std::string prompt, double min);
 
     /**
      * Gets a char value from stdin in a user friendly manner
@@ -43,7 +51,7 @@ public:
      * @param prompt The string to print (not including a " :")
      * @param minLength The minimum string length to allow
      * @param maxLength The maximum string length to allow
-     * @return string the user entered string with length between minLength and maxLength
+     * @return the user entered string with length between minLength and maxLength
      */
     static std::string getWord(std::string prompt, unsigned minLength, unsigned maxLength);
 
