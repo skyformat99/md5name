@@ -107,6 +107,21 @@ int main(int argc, char *argv[]) {
         } else {
             /*              IF FILE              */
             string filename = argv[i]; //filename and path
+            unsigned long filesize = boost::filesystem::file_size(filename);
+            const unsigned int kB = 1024;
+            
+            if (filesize <= 0) {
+                if (!force) { //print if not forced (even if not verbose), ignore if forced
+                    cout << filename << ": ";
+                    if (filesize <= 0 && !force)
+                        cout << "Warning: ";
+                    cout << "Filesize: " << fixed << setprecision(2) << (double)filesize / (double)kB << "kB" << endl;
+                } //else rename
+            }
+            
+            //TODO: CHECK FOR DIRECTORIES WITH -r FLAG, enter -> ls -> for each file (rename)
+            
+            /*          RENAME          */
             string newName = getPath(filename) + getMD5(getData(filename)) + getExt(filename); //New name
             //if verbose, print details and only rename if !dryrun.
             //if not verbose, only rename if !dryrun, otherwise be quiet.
@@ -183,21 +198,8 @@ string getExt(string f) {
 }
 
 vector<char> getData(string& filename) {
-    unsigned long filesize = boost::filesystem::file_size(filename);
-    if (verbose) {
+    if (verbose)
         cout << filename << ": Opening..." << endl;
-        const unsigned int kB = 1024;
-        if (filesize != 0) {
-            cout << filename << ": Filesize: " << fixed << setprecision(2) << (double)filesize / (double)kB << "kB" << endl;
-        }
-    }
-
-    //Check if empty or directory
-    if (filesize <= 0) {
-        if (!force)
-            cout << filename << ": Warning: Filesize = 0\n";
-        //else {say nothing}
-    }
 
     ifstream file(filename);
     if (file.fail()) {
