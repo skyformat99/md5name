@@ -3,6 +3,7 @@
 .*~
 *.un~
 *.swp
+.*.swp
 
 # Prerequisites
 *.d
@@ -45,7 +46,7 @@
 cmake-build-debug/
 CMakeLists.txt
 
-# CLion IDE files
+# IDEA files
 .idea/
 
 # Doxygen files
@@ -58,16 +59,15 @@ man/
 *.cbp
 *.layout
 *.save
-
-# Code::Blocks build files
 obj/
 bin/
 
-# Eclipse IDE files
-.project
+# Eclipse files
+Debug/
 .cproject
+.project
 .settings/
 
-# Eclipse IDE build files
-Debug/
-Release/
+# Xcode files
+*.xcodeproj/
+

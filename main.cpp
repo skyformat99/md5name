@@ -1,16 +1,16 @@
 /**
-    @file main.cpp````````
+    @file main.cpp
     md5name - Rename files to their md5 hashes
 **/
 
 #include <iostream>
+#include <iomanip> //setprecision
 #include <fstream>
 #include <vector>
 #include "MD5.hpp" //md5 file class
 #include "getinput.hpp" //for easy user input
 
-//#include <boost/filesystem.hpp>
-
+#include <boost/filesystem.hpp> //it finally works in xcode!!!
 
 using namespace std;
 
@@ -19,19 +19,19 @@ using namespace std;
  * @param buffer the buffer to generate the hash from
  * @return 32 character md5 hash
  */
-string getMD5(vector<char> buffer);
+string getMD5(const vector<char>& buffer);
 
 /**
  * Get the relative path from a relative file path
  * (i.e "img/test.jpg" > "img/")
- * @param filename the relative file path
+ * @param f the relative file path
  * @return just the path, not the file or extension, ends in '/'.
  */
 string getPath(string f);
 
 /**
  * Get the extension (".ext") from a file or file path
- * @param filename file or file path
+ * @param f file or file path
  * @return file extension
  */
 string getExt(string f);
@@ -46,7 +46,7 @@ vector<char> getData(string& filename);
 
 /**
  * Get filesize in bytes
- * @param filename
+ * @param filename the file path to read
  * @return filesize
  */
 ifstream::pos_type getFilesize(const char* filename);
@@ -56,22 +56,29 @@ ifstream::pos_type getFilesize(const char* filename);
  */
 void help();
 
-string programName;
+/**
+ * Print usage information
+ */
+void usage();
+
+const string programName = "md5name";
 
 bool force; //if filesize over 10mb require this
 bool verbose;
 bool dryRun;
+//bool recursive; //TODO: recursive (search and rename files and files in folders in folder)
 
 int main(int argc, char *argv[]) {
-
-    programName = argv[0];
-
-    if (argc == 1) { //Print help for no arguments
-        cout << "Usage: " << programName << " -[fvdh] filename1 ... filename2\nUse -h for help\n";
+    if (argc == 1) { //Print usage for no arguments
+        usage();
         exit(0);
     }
+    
+    //keep track of files passed as args
+    unsigned long filesProcessed = 0;
 
     for (int i = 1; i < argc; ++i) { //start at 1 to skip program name in argv
+        
         if (argv[i][0] == '-') {
             /*                       IF FLAGS                          */
             string flags = argv[i];
@@ -82,9 +89,12 @@ int main(int argc, char *argv[]) {
                 switch (flag) {
                     case 'f': force = true;
                         break;
-                    case 'v': verbose = true;
+                    case 'v':
+                        verbose = true;
                         break;
                     case 'd': dryRun = true;
+                        if (verbose)
+                            cout << "Dry run:\n";
                         break;
                     default:
                         cout << "Unknown option: \"-" << flag << "\"" << endl;
@@ -101,14 +111,22 @@ int main(int argc, char *argv[]) {
             //if verbose, print details and only rename if !dryrun.
             //if not verbose, only rename if !dryrun, otherwise be quiet.
             if (verbose) {
-                cout << filename << " > " << newName << endl;
+                cout << filename << " -> " << newName << endl;
                 if (!dryRun) {
                     rename(filename.c_str(), newName.c_str());
                 }
             } else if (!dryRun) {
                 rename(filename.c_str(), newName.c_str());
             }
+            
+            filesProcessed++;
         }
+    }
+    
+    //Print usage if no files passed
+    if (filesProcessed == 0) {
+        usage();
+        exit(0);
     }
     return 0;
 }
@@ -122,7 +140,11 @@ void help() {
          << "\t-h: Print this help message.\n";
 }
 
-string getMD5(vector<char> buffer) {
+void usage() {
+    cout << "Usage: " << programName << " -[fvdh] filename1 ... filename2\nUse -h for help\n";
+}
+
+string getMD5(const vector<char>& buffer) {
     MD5 md5;
     md5.update(buffer.data(), (MD5::size_type)buffer.size());
     md5.finalize();
@@ -133,10 +155,10 @@ string getPath(string f) {
     unsigned long i;
     for (i = f.length(); i != 0; i--) {
         if (f[i] == '/') {
-            return f.substr(0, i) + '/'; //start to '/'
+            return f.substr(0, i) + '/'; //start of string to last index of '/'
         }
     }
-    //i = 0, no directory
+    //i = 0, no directory:
     return ""; //no path
 }
 
@@ -151,8 +173,7 @@ string getExt(string f) {
             default: cout << "Fatal error\n"; exit(-1);
         }
     }
-    unsigned long i;
-    for (i = f.length(); i != 0; i--) {
+    for (unsigned long i = f.length(); i != 0; i--) {
         if (f[i] == '.') {
             return f.substr(i);
         }
@@ -162,10 +183,14 @@ string getExt(string f) {
 }
 
 vector<char> getData(string& filename) {
-    if (verbose)
+    unsigned long filesize = boost::filesystem::file_size(filename);
+    if (verbose) {
         cout << filename << ": Opening..." << endl;
-
-    unsigned filesize = static_cast<unsigned>(getFilesize(filename.c_str()));
+        const unsigned int kB = 1024;
+        if (filesize != 0) {
+            cout << filename << ": Filesize: " << fixed << setprecision(2) << (double)filesize / (double)kB << "kB" << endl;
+        }
+    }
 
     //Check if empty or directory
     if (filesize <= 0) {
@@ -187,9 +212,4 @@ vector<char> getData(string& filename) {
                         (istreambuf_iterator<char>()));
     file.close();
     return buffer;
-}
-
-ifstream::pos_type getFilesize(const char *filename) {
-    ifstream in(filename, ifstream::ate | ifstream::binary);
-return in.tellg();
 }
