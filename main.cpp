@@ -139,7 +139,8 @@ int main(int argc, char *argv[]) {
             if (filesize <= 0) {
                 if (!force) { //print if not forced (even if not verbose), ignore if forced
                     cout << filename << ": ";
-                    if (filesize <= 0 && !force)
+                    if (filesize <= 0 && !force) //todo: automatically insert d41d8cd98f00b204e9800998ecf8427e (empty)
+                                                 //instead of calculating it again
                         cout << "Warning: ";
                     cout << "Filesize: " << fixed << setprecision(2) << (double)filesize / (double)kB << "kB" << endl;
                 } //else rename
@@ -160,7 +161,7 @@ int main(int argc, char *argv[]) {
                 rename(filename.c_str(), newName.c_str());
             }
             
-            filesProcessed++;
+            filesProcessed++; //todo: this also counts skipped files
         }
     }
     if (verbose)
