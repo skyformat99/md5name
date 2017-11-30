@@ -6,11 +6,11 @@
 #include <iostream>
 #include <iomanip> //setprecision
 #include <fstream>
-#include <vector>
+#include <vector> //data is stored in vectors of char
 #include "MD5.hpp" //md5 file class
 #include "getinput.hpp" //for easy user input
 
-#include <boost/filesystem.hpp> //it finally works in xcode!!!
+#include <boost/filesystem.hpp> //for checking filesize, directory, etc
 
 using namespace std;
 
@@ -63,13 +63,22 @@ void usage();
 
 const string programName = "md5name";
 
-bool force; //if filesize over 10mb require this
-bool verbose;
-bool dryRun;
-//bool recursive; //TODO: recursive (search and rename files and files in folders in folder)
+bool force; // if filesize over 10mb require this. defaults renaming .hidden files to .[md5]
+bool verbose; // print more info to stdout
+bool dryRun; // don't change any file or folder names
+bool recursive; //TODO: recursive (search and rename files and files in folders in folder)
+
+//dirs: enter and rename files if -r specified, otherwise skip and notify if not forced.
+//hidden: rename to .md5 if forced, otherwise ask
+//regular: rename to md5.extension
+//no extension: rename to md5
+
+//warn if overwriting a file if (not -f) or -v (i.e two of the same data w/ differing names)
+//dont warn if forced and not verbose
+//warn for different extensions, too
 
 int main(int argc, char *argv[]) {
-    if (argc == 1) { //Print usage for no arguments
+    if (argc == 1) { //Print usage if no arguments given
         usage();
         exit(0);
     }
@@ -96,6 +105,9 @@ int main(int argc, char *argv[]) {
                         if (verbose)
                             cout << "Dry run:\n";
                         break;
+                    case 'r': recursive = true;
+                        if (verbose)
+                            cout << "(recursive)\n";
                     default:
                         cout << "Unknown option: \"-" << flag << "\"" << endl;
                         /* no break, print help too */
@@ -105,8 +117,22 @@ int main(int argc, char *argv[]) {
                 }
             }
         } else {
-            /*              IF FILE              */
             string filename = argv[i]; //filename and path
+            /*            IF DIRECTORY           */
+            if (boost::filesystem::is_directory(filename)) {
+                if (recursive) { //Enter directory and rename files (recursion time woohoo)
+                    chdir(filename.c_str());
+                    cout << "(dev): Files to rename:\n";
+                    system("ls -R");
+                }
+                
+                if (verbose || !force) {
+                    cout << "Skipping directory \"" << filename << "\"\n";
+                    break;
+                }
+            }
+            
+            /*              IF FILE              */
             unsigned long filesize = boost::filesystem::file_size(filename);
             const unsigned int kB = 1024;
             
@@ -137,7 +163,8 @@ int main(int argc, char *argv[]) {
             filesProcessed++;
         }
     }
-    
+    if (verbose)
+        cout << filesProcessed << " files processed.\n";
     //Print usage if no files passed
     if (filesProcessed == 0) {
         usage();
