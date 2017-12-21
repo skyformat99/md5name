@@ -7,11 +7,13 @@
 #include <iomanip> //setprecision
 #include <fstream>
 #include <vector> //data is stored in vectors of char
+
 #include "MD5.hpp" //md5 file class
 #include "getinput.hpp" //for easy user input
 
 #include <boost/filesystem.hpp> //for checking filesize, directory, etc
 
+namespace bfs = boost::filesystem; //bfs:: instead of boost::filesystem::
 using namespace std;
 
 /**
@@ -45,13 +47,6 @@ string getExt(string f);
 vector<char> getData(string& filename);
 
 /**
- * Get filesize in bytes
- * @param filename the file path to read
- * @return filesize
- */
-ifstream::pos_type getFilesize(const char* filename);
-
-/**
  * Print help message
  */
 void help();
@@ -66,7 +61,6 @@ const string programName = "md5name";
 bool force; // if filesize over 10mb require this. defaults renaming .hidden files to .[md5]
 bool verbose; // print more info to stdout
 bool dryRun; // don't change any file or folder names
-bool recursive; //TODO: recursive (search and rename files and files in folders in folder)
 
 //dirs: enter and rename files if -r specified, otherwise skip and notify if not forced.
 //hidden: rename to .md5 if forced, otherwise ask
@@ -86,15 +80,14 @@ int main(int argc, char *argv[]) {
     //keep track of files passed as args
     unsigned long filesProcessed = 0;
 
-    for (int i = 1; i < argc; ++i) { //start at 1 to skip program name in argv
-        
-        if (argv[i][0] == '-') {
+    for (int argumentIndex = 1; argumentIndex < argc; ++argumentIndex) { //start at 1 to skip program name in argv
+        if (argv[argumentIndex][0] == '-') {
             /*                       IF FLAGS                          */
-            string flags = argv[i];
+            string flags = argv[argumentIndex];
 
             //start at j=1 to skip '-'
             for (unsigned j = 1; j < flags.length(); ++j) { //check for commands in each char (i.e search "-lf" for 'l' and 'f'
-                char flag = argv[i][j];
+                char flag = argv[argumentIndex][j];
                 switch (flag) {
                     case 'f': force = true;
                         break;
@@ -105,11 +98,8 @@ int main(int argc, char *argv[]) {
                         if (verbose)
                             cout << "Dry run:\n";
                         break;
-                    case 'r': recursive = true;
-                        if (verbose)
-                            cout << "(recursive)\n";
                     default:
-                        cout << "Unknown option: \"-" << flag << "\"" << endl;
+                        cout << "Unknown option: \"-" << flag << '"' << endl;
                         /* no break, print help too */
                     case 'h':
                         help();
@@ -117,60 +107,49 @@ int main(int argc, char *argv[]) {
                 }
             }
         } else {
-            string filename = argv[i]; //filename and path
+            string filename = argv[argumentIndex]; //filename and path
             /*            IF DIRECTORY           */
-            if (boost::filesystem::is_directory(filename)) {
-                if (recursive) { //Enter directory and rename files (recursion time woohoo)
-                    chdir(filename.c_str());
-                    cout << "(dev): Files to rename:\n";
-                    system("ls -R");
-                }
-                
-                if (verbose || !force) {
-                    cout << "Skipping directory \"" << filename << "\"\n";
-                    break;
-                }
+            if (bfs::is_directory(filename) && (verbose || !force)) {
+                cout << filename << ": Warning: Skipping directory\n";
+                break;
             }
             
             /*              IF FILE              */
-            unsigned long filesize = boost::filesystem::file_size(filename);
-            const unsigned int kB = 1024;
+            unsigned long filesize = bfs::file_size(filename);
+            const unsigned int KB = 1024;
             
             if (filesize <= 0) {
                 if (!force) { //print if not forced (even if not verbose), ignore if forced
                     cout << filename << ": ";
-                    if (filesize <= 0 && !force) //todo: automatically insert d41d8cd98f00b204e9800998ecf8427e (empty)
-                                                 //instead of calculating it again
-                        cout << "Warning: ";
-                    cout << "Filesize: " << fixed << setprecision(2) << (double)filesize / (double)kB << "kB" << endl;
-                } //else rename
+                    cout << "Warning: ";
+                    cout << "Filesize: " << fixed << setprecision(2) << (double)filesize / (double)KB << "kB" << endl;
+                } else {
+                    
+                }
             }
-            
-            //TODO: CHECK FOR DIRECTORIES WITH -r FLAG, enter -> ls -> for each file (rename)
             
             /*          RENAME          */
             string newName = getPath(filename) + getMD5(getData(filename)) + getExt(filename); //New name
-            //if verbose, print details and only rename if !dryrun.
-            //if not verbose, only rename if !dryrun, otherwise be quiet.
+            
             if (verbose) {
                 cout << filename << " -> " << newName << endl;
-                if (!dryRun) {
-                    rename(filename.c_str(), newName.c_str());
-                }
-            } else if (!dryRun) {
+            }
+            if (!dryRun) {
                 rename(filename.c_str(), newName.c_str());
             }
             
             filesProcessed++; //todo: this also counts skipped files
         }
     }
+    
     if (verbose)
         cout << filesProcessed << " files processed.\n";
-    //Print usage if no files passed
+
     if (filesProcessed == 0) {
         usage();
         exit(0);
     }
+    
     return 0;
 }
 
@@ -207,28 +186,18 @@ string getPath(string f) {
 
 string getExt(string f) {
     if (f[0] == '.') {
-        //TODO: IF ".EXTENTION" ASK FOR [MD5].EXTENTION OR JUST [MD5] OR .[MD5]
-        cout << "Found \"" << f << "\"\nWould you like to rename to:\n1: \"[md5]." << f << "\" or\n2: \".[md5]\"";
-        int choice = GetInput::getInt("Choice (1/2)", 1, 2);
-        switch (choice) {
-            case 1: return f;
-            case 2: //return "";
-            default: cout << "Fatal error\n"; exit(-1);
-        }
+        cout << f << ": Warning: Hidden file\n";
     }
     for (unsigned long i = f.length(); i != 0; i--) {
         if (f[i] == '.') {
             return f.substr(i);
         }
     }
-    //if i = 0
+    cout << f << ": Warning: No extension\n";
     return ""; //return no extension if no '.'
 }
 
 vector<char> getData(string& filename) {
-    if (verbose)
-        cout << filename << ": Opening..." << endl;
-
     ifstream file(filename);
     if (file.fail()) {
         if (verbose) {
